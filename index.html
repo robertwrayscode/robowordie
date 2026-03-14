@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cluedle - Wordle with Clues</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 0.9em;
+        }
+
+        .difficulty-select {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+
+        .difficulty-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .difficulty-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .difficulty-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .game-area {
+            display: none;
+        }
+
+        .game-area.active {
+            display: block;
+        }
+
+        .guess-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            font-weight: bold;
+            letter-spacing: 0.2em;
+        }
+
+        .guess-btn {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .guess-btn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .guess-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f7f7f7;
+            border-radius: 10px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .history {
+            margin-top: 20px;
+        }
+
+        .guess-item {
+            background: #f7f7f7;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .letter-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .letter-box {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            border-radius: 8px;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .letter-box.correct {
+            background: #6aaa64;
+        }
+
+        .letter-box.present {
+            background: #c9b458;
+        }
+
+        .letter-box.absent {
+            background: #787c7e;
+        }
+
+        .guess-clue {
+            color: #666;
+            font-style: italic;
+            line-height: 1.4;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.win {
+            background: #4ade80;
+            color: white;
+        }
+
+        .message.lose {
+            background: #f87171;
+            color: white;
+        }
+
+        .message.info {
+            background: #60a5fa;
+            color: white;
+        }
+
+        .new-game-btn {
+            width: 100%;
+            padding: 15px;
+            background: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+
+        .new-game-btn:hover {
+            background: #653a8a;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .difficulty-btn {
+                font-size: 0.9em;
+                padding: 10px;
+            }
+
+            .letter-box {
+                width: 45px;
+                height: 45px;
+                font-size: 1.3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Cluedle</h1>
+        <p class="subtitle">Wordle with helpful clues!</p>
+
+        <div class="difficulty-select" id="difficultySelect">
+            <button class="difficulty-btn" data-difficulty="easy">Easy</button>
+            <button class="difficulty-btn active" data-difficulty="medium">Medium</button>
+            <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+        </div>
+
+        <div class="game-area" id="gameArea">
+            <div class="message" id="message"></div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Attempts</div>
+                    <div class="stat-value" id="attempts">0/6</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Difficulty</div>
+                    <div class="stat-value" id="currentDifficulty">Medium</div>
+                </div>
+            </div>
+
+            <input 
+                type="text" 
+                class="guess-input" 
+                id="guessInput" 
+                maxlength="5" 
+                placeholder="Enter 5-letter word"
+                autocomplete="off"
+            >
+            <button class="guess-btn" id="guessBtn">Submit Guess</button>
+
+            <div class="history" id="history"></div>
+
+            <button class="new-game-btn" id="newGameBtn">New Game</button>
+        </div>
+    </div>
+
+    <script>
+        const wordLists = {
+            easy: {
+                words: [
+                    'APPLE', 'BREAD', 'CHAIR', 'DANCE', 'EARTH', 'FRUIT', 'GLASS', 'HAPPY', 'IMAGE', 'JUICE',
+                    'LIGHT', 'MONEY', 'NIGHT', 'OCEAN', 'PEACE', 'QUIET', 'RIVER', 'SMILE', 'TABLE', 'VOICE',
+                    'WATER', 'WORLD', 'YOUNG', 'BEACH', 'CLOUD', 'DREAM', 'FAITH', 'GREEN', 'HEART', 'HOUSE',
+                    'MUSIC', 'PLANT', 'QUEEN', 'SLEEP', 'STONE', 'TIGER', 'UNCLE', 'WATCH', 'YOUTH', 'BRAIN',
+                    'CREAM', 'FIELD', 'GRAND', 'HORSE', 'LEMON', 'MAGIC', 'PAPER', 'RADIO', 'SOUTH', 'TRAIN',
+                    'WHEAT', 'ANGEL', 'BIRTH', 'CHESS', 'DRINK', 'FLAME', 'GRACE', 'HONEY', 'INPUT', 'KNIFE',
+                    'LAUGH', 'MONTH', 'NORTH', 'PHONE', 'PRIZE', 'SUGAR', 'THINK', 'TOWER', 'WHEEL', 'BROWN',
+                    'CLOCK', 'DAILY', 'EQUAL', 'FRESH', 'GIANT', 'HUMAN', 'JUDGE', 'LEVEL', 'METAL', 'PARTY',
+                    'QUICK', 'ROUND', 'SMART', 'TRUST', 'VIDEO', 'WHITE', 'WOMAN', 'WRITE', 'BLANK', 'CRAFT',
+                    'DOING', 'EMPTY', 'FRONT', 'GREAT', 'HEAVY', 'IDEAL', 'JOINT', 'KNOWN', 'LOCAL', 'MAJOR'
+                ],
+                clues: {
+                    'APPLE': 'A fruit that keeps the doctor away, often red or green.',
+                    'BREAD': 'The staff of life, made from flour and yeast.',
+                    'CHAIR': 'Furniture with four legs that you sit on.',
+                    'DANCE': 'Moving rhythmically to music.',
+                    'EARTH': 'The planet we call home.',
+                    'FRUIT': 'Sweet produce from trees and plants.',
+                    'GLASS': 'Transparent material used for windows.',
+                    'HAPPY': 'Feeling joyful and content.',
+                    'IMAGE': 'A picture or visual representation.',
+                    'JUICE': 'Liquid extracted from fruits.',
+                    'LIGHT': 'What illuminates darkness.',
+                    'MONEY': 'What you use to buy things.',
+                    'NIGHT': 'When the sun goes down and stars come out.',
+                    'OCEAN': 'The largest body of saltwater.',
+                    'PEACE': 'The opposite of war; tranquility.',
+                    'QUIET': 'The absence of noise.',
+                    'RIVER': 'Flowing water between banks.',
+                    'SMILE': 'The curve your mouth makes when happy.',
+                    'TABLE': 'Flat furniture where you eat meals.',
+                    'VOICE': 'The sound you make when speaking.',
+                    'WATER': 'H2O, essential for life.',
+                    'WORLD': 'The entire planet and everything on it.',
+                    'YOUNG': 'Not old, in the early stage of life.',
+                    'BEACH': 'Sandy shore where ocean meets land.',
+                    'CLOUD': 'White fluffy thing floating in the sky.',
+                    'DREAM': 'Visions you see while sleeping.',
+                    'FAITH': 'Belief without needing proof.',
+                    'GREEN': 'The color of grass and leaves.',
+                    'HEART': 'The organ that pumps blood.',
+                    'HOUSE': 'A building where people live.',
+                    'MUSIC': 'Organized sounds that create melody.',
+                    'PLANT': 'Living organism that grows in soil.',
+                    'QUEEN': 'Female monarch or chess piece.',
+                    'SLEEP': 'What you do at night to rest.',
+                    'STONE': 'Hard solid piece of rock.',
+                    'TIGER': 'Large striped wild cat.',
+                    'UNCLE': 'Your parent\'s brother.',
+                    'WATCH': 'Device worn on wrist to tell time.',
+                    'YOUTH': 'The time when you\'re young.',
+                    'BRAIN': 'The thinking organ in your head.',
+                    'CREAM': 'Rich fatty part of milk.',
+                    'FIELD': 'Open land used for farming or sports.',
+                    'GRAND': 'Large and impressive.',
+                    'HORSE': 'Four-legged animal you can ride.',
+                    'LEMON': 'Sour yellow citrus fruit.',
+                    'MAGIC': 'Mysterious powers that seem supernatural.',
+                    'PAPER': 'Thin material used for writing.',
+                    'RADIO': 'Device that plays broadcast audio.',
+                    'SOUTH': 'Direction opposite of north.',
+                    'TRAIN': 'Vehicle that runs on rails.',
+                    'WHEAT': 'Grain used to make flour.',
+                    'ANGEL': 'Heavenly messenger with wings.',
+                    'BIRTH': 'When a baby comes into the world.',
+                    'CHESS': 'Strategic board game with kings and pawns.',
+                    'DRINK': 'Liquid you consume.',
+                    'FLAME': 'Glowing part of fire.',
+                    'GRACE': 'Elegant movement or divine blessing.',
+                    'HONEY': 'Sweet substance made by bees.',
+                    'INPUT': 'Data or information put into a system.',
+                    'KNIFE': 'Sharp cutting tool.',
+                    'LAUGH': 'Sound you make when amused.',
+                    'MONTH': 'One of twelve divisions of the year.',
+                    'NORTH': 'Direction toward the top of a map.',
+                    'PHONE': 'Device for making calls.',
+                    'PRIZE': 'Award for winning.',
+                    'SUGAR': 'Sweet white crystals for food.',
+                    'THINK': 'Using your mind to reason.',
+                    'TOWER': 'Tall narrow building.',
+                    'WHEEL': 'Round object that rolls.',
+                    'BROWN': 'Color of earth and chocolate.',
+                    'CLOCK': 'Device that shows the time.',
+                    'DAILY': 'Happening every day.',
+                    'EQUAL': 'The same in value or amount.',
+                    'FRESH': 'Newly made or gathered.',
+                    'GIANT': 'Extremely large person or thing.',
+                    'HUMAN': 'A person, member of our species.',
+                    'JUDGE': 'Person who makes legal decisions.',
+                    'LEVEL': 'Flat and even surface.',
+                    'METAL': 'Hard shiny material like iron.',
+                    'PARTY': 'Celebration with friends.',
+                    'QUICK': 'Fast and speedy.',
+                    'ROUND': 'Shaped like a circle.',
+                    'SMART': 'Intelligent and clever.',
+                    'TRUST': 'Believing someone is reliable.',
+                    'VIDEO': 'Moving pictures on a screen.',
+                    'WHITE': 'Color of snow and clouds.',
+                    'WOMAN': 'Adult female human.',
+                    'WRITE': 'Put words on paper.',
+                    'BLANK': 'Empty with nothing written.',
+                    'CRAFT': 'Skill in making things by hand.',
+                    'DOING': 'Taking action on something.',
+                    'EMPTY': 'Containing nothing.',
+                    'FRONT': 'The forward-facing part.',
+                    'GREAT': 'Very good or large.',
+                    'HEAVY': 'Weighing a lot.',
+                    'IDEAL': 'Perfect or best possible.',
+                    'JOINT': 'Where two things connect.',
+                    'KNOWN': 'Familiar or recognized.',
+                    'LOCAL': 'From nearby or the same area.',
+                    'MAJOR': 'Important or significant.'
+                }
+            },
+            medium: {
+                words: [
+                    'BADGE', 'CABLE', 'DEBUG', 'ELBOW', 'FABLE', 'GAUGE', 'HABIT', 'IDEAL', 'JOLLY', 'KARMA',
+                    'LABOR', 'MAPLE', 'NOBLE', 'OLIVE', 'PIXEL', 'QUART', 'REBEL', 'SOLAR', 'TOXIC', 'URBAN',
+                    'VALUE', 'WAGON', 'YIELD', 'ZEBRA', 'ABOUT', 'BLEND', 'CORAL', 'DELTA', 'EXCEL', 'FLUTE',
+                    'GLOBE', 'HOVER', 'INDEX', 'JELLY', 'KOALA', 'LOGIC', 'MODAL', 'NICHE', 'ORBIT', 'PEARL',
+                    'QUEST', 'RATIO', 'SCOPE', 'TEMPO', 'ULTRA', 'VITAL', 'WRIST', 'YACHT', 'ZONES', 'ALARM',
+                    'BRUSH', 'CRAVE', 'DRAFT', 'EMBED', 'FORGE', 'GRIEF', 'HATCH', 'IVORY', 'JOUST', 'KNACK',
+                    'LUNAR', 'MERCY', 'NERVE', 'OUNCE', 'PANEL', 'QUOTA', 'RIDGE', 'STARK', 'TIDAL', 'UNITY',
+                    'VIGOR', 'WHISK', 'YACHT', 'ZONAL', 'ADAPT', 'BOOST', 'CLASH', 'DWELL', 'EVOKE', 'FROST',
+                    'GAUGE', 'HELIX', 'INFER', 'JAUNT', 'KNOLL', 'LUSTY', 'MELON', 'NOTCH', 'OPTIC', 'PRISM',
+                    'QUELL', 'REALM', 'SCORN', 'TUNIC', 'USHER', 'VAULT', 'WALTZ', 'XENON', 'YEARN', 'ZILCH'
+                ],
+                clues: {
+                    'BADGE': 'Small emblem worn to show authority or achievement.',
+                    'CABLE': 'Thick wire for transmitting electricity or signals.',
+                    'DEBUG': 'Process of finding and fixing errors in code.',
+                    'ELBOW': 'The joint in the middle of your arm.',
+                    'FABLE': 'Short story with a moral lesson.',
+                    'GAUGE': 'Instrument that measures or indicates.',
+                    'HABIT': 'Regular behavior done without thinking.',
+                    'IDEAL': 'Perfect example of something.',
+                    'JOLLY': 'Cheerful and full of good humor.',
+                    'KARMA': 'Cosmic principle of cause and effect.',
+                    'LABOR': 'Physical or mental work.',
+                    'MAPLE': 'Tree known for sweet sap and colorful leaves.',
+                    'NOBLE': 'Having high moral qualities.',
+                    'OLIVE': 'Small oval fruit used for oil.',
+                    'PIXEL': 'Smallest unit of a digital image.',
+                    'QUART': 'Unit of liquid measurement.',
+                    'REBEL': 'One who resists authority.',
+                    'SOLAR': 'Relating to the sun.',
+                    'TOXIC': 'Poisonous or harmful.',
+                    'URBAN': 'Relating to cities.',
+                    'VALUE': 'Worth or importance of something.',
+                    'WAGON': 'Four-wheeled vehicle pulled by animals.',
+                    'YIELD': 'Produce or give way.',
+                    'ZEBRA': 'Striped African horse.',
+                    'ABOUT': 'Concerning or approximately.',
+                    'BLEND': 'Mix together smoothly.',
+                    'CORAL': 'Marine organism that forms reefs.',
+                    'DELTA': 'Triangular river mouth or Greek letter.',
+                    'EXCEL': 'Be exceptionally good at something.',
+                    'FLUTE': 'Wind instrument played sideways.',
+                    'GLOBE': 'Spherical model of Earth.',
+                    'HOVER': 'Remain suspended in air.',
+                    'INDEX': 'List or indicator.',
+                    'JELLY': 'Wobbly fruit preserve.',
+                    'KOALA': 'Australian marsupial that eats eucalyptus.',
+                    'LOGIC': 'Reasoning conducted systematically.',
+                    'MODAL': 'Relating to mode or form.',
+                    'NICHE': 'Specialized segment or alcove.',
+                    'ORBIT': 'Path of celestial body around another.',
+                    'PEARL': 'Lustrous gem from oysters.',
+                    'QUEST': 'Long search for something.',
+                    'RATIO': 'Quantitative relation between amounts.',
+                    'SCOPE': 'Range or extent of something.',
+                    'TEMPO': 'Speed of music.',
+                    'ULTRA': 'Going beyond normal limits.',
+                    'VITAL': 'Absolutely necessary.',
+                    'WRIST': 'Joint connecting hand to forearm.',
+                    'YACHT': 'Luxurious sailing vessel.',
+                    'ZONES': 'Areas with particular characteristics.',
+                    'ALARM': 'Warning signal or feeling of fear.',
+                    'BRUSH': 'Tool with bristles for painting or cleaning.',
+                    'CRAVE': 'Intensely desire something.',
+                    'DRAFT': 'Preliminary version or current of air.',
+                    'EMBED': 'Fix firmly in surrounding mass.',
+                    'FORGE': 'Create through effort or heat metal.',
+                    'GRIEF': 'Deep sorrow from loss.',
+                    'HATCH': 'Emerge from egg or plan secretly.',
+                    'IVORY': 'Hard white material from elephant tusks.',
+                    'JOUST': 'Medieval combat on horseback.',
+                    'KNACK': 'Natural skill or talent.',
+                    'LUNAR': 'Relating to the moon.',
+                    'MERCY': 'Compassion shown to wrongdoer.',
+                    'NERVE': 'Fiber transmitting signals or courage.',
+                    'OUNCE': 'Unit of weight or small amount.',
+                    'PANEL': 'Flat distinct section.',
+                    'QUOTA': 'Fixed share or number.',
+                    'RIDGE': 'Long narrow hilltop.',
+                    'STARK': 'Severe or bare in appearance.',
+                    'TIDAL': 'Relating to ocean tides.',
+                    'UNITY': 'State of being united.',
+                    'VIGOR': 'Physical strength and energy.',
+                    'WHISK': 'Beat ingredients rapidly.',
+                    'ZONAL': 'Relating to zones or bands.',
+                    'ADAPT': 'Adjust to new conditions.',
+                    'BOOST': 'Increase or improve.',
+                    'CLASH': 'Violent conflict or mismatch.',
+                    'DWELL': 'Live or reside somewhere.',
+                    'EVOKE': 'Bring to mind or feeling.',
+                    'FROST': 'Ice crystals on cold surface.',
+                    'HELIX': 'Spiral or coil shape.',
+                    'INFER': 'Deduce from evidence.',
+                    'JAUNT': 'Short journey for pleasure.',
+                    'KNOLL': 'Small rounded hill.',
+                    'LUSTY': 'Healthy and vigorous.',
+                    'MELON': 'Large sweet fruit.',
+                    'NOTCH': 'V-shaped cut or level.',
+                    'OPTIC': 'Relating to vision.',
+                    'PRISM': 'Transparent object splitting light.',
+                    'QUELL': 'Suppress or pacify.',
+                    'REALM': 'Kingdom or field of activity.',
+                    'SCORN': 'Contempt or disdain.',
+                    'TUNIC': 'Loose garment.',
+                    'USHER': 'Guide people to seats.',
+                    'VAULT': 'Secure room or arched ceiling.',
+                    'WALTZ': 'Ballroom dance in triple time.',
+                    'XENON': 'Noble gas used in lamps.',
+                    'YEARN': 'Long for something.',
+                    'ZILCH': 'Nothing at all.'
+                }
+            },
+            hard: {
+                words: [
+                    'ABHOR', 'BEZEL', 'CRUX', 'DWARF', 'EPOCH', 'FJORD', 'GLYPH', 'HAIKU', 'ICHOR', 'JOULE',
+                    'KUDOS', 'LYMPH', 'MIRTH', 'NYMPH', 'ONYX', 'PHLOX', 'QUALM', 'RELAX', 'SYNOD', 'TRYST',
+                    'USURP', 'VERVE', 'WROTH', 'XYLEM', 'YAWNS', 'ZESTY', 'ABYSS', 'BLITZ', 'CYNIC', 'DEITY',
+                    'ENVOY', 'FLANK', 'GRIFT', 'HEIST', 'INERT', 'JOUST', 'KNAVE', 'LURID', 'MYRIAD', 'NEXUS',
+                    'OMEGA', 'PLUMB', 'QUASH', 'RELIC', 'STOIC', 'TROVE', 'ULTRA', 'VIVID', 'WHELP', 'XYLAN',
+                    'YEAST', 'ZILCH', 'ANGST', 'BRISK', 'CHASM', 'DECRY', 'ELEGY', 'FLAUNT', 'GNASH', 'HOARD',
+                    'INANE', 'JAZZY', 'KNURL', 'LOCUS', 'MOTIF', 'NADIR', 'OZONE', 'PIQUE', 'QUIRK', 'RIGOR',
+                    'SMIRK', 'TERSE', 'UNIFY', 'VEXED', 'WHIMS', 'XEROX', 'YOKEL', 'ZONAL', 'AXIOM', 'BLUFF',
+                    'CRYPT', 'DROOP', 'EJECT', 'FEMUR', 'GRUFF', 'HYPER', 'INEPT', 'JUROR', 'KIOSK', 'LUCID',
+                    'MAXIM', 'NOMAD', 'OPINE', 'PROXY', 'QUELL', 'RAWLY', 'STAID', 'TOXIC', 'UNDUE', 'VAPID'
+                ],
+                clues: {
+                    'ABHOR': 'Feel intense disgust toward something.',
+                    'BEZEL': 'The groove holding a gem in its setting.',
+                    'CRUX': 'The decisive or most important point.',
+                    'DWARF': 'Extremely small person or celestial body.',
+                    'EPOCH': 'Period of time marked by notable events.',
+                    'FJORD': 'Narrow inlet between cliffs in Norway.',
+                    'GLYPH': 'Symbolic character or carving.',
+                    'HAIKU': 'Japanese three-line poem.',
+                    'ICHOR': 'Mythological fluid in gods\' veins.',
+                    'JOULE': 'Unit of energy in physics.',
+                    'KUDOS': 'Praise for achievement.',
+                    'LYMPH': 'Clear fluid in the immune system.',
+                    'MIRTH': 'Amusement expressed through laughter.',
+                    'NYMPH': 'Mythological spirit of nature.',
+                    'ONYX': 'Black gemstone with bands.',
+                    'PHLOX': 'Flowering plant with clusters.',
+                    'QUALM': 'Uneasy feeling of doubt.',
+                    'RELAX': 'Release tension and rest.',
+                    'SYNOD': 'Assembly of church officials.',
+                    'TRYST': 'Secret romantic meeting.',
+                    'USURP': 'Take position by force.',
+                    'VERVE': 'Vigor and enthusiasm.',
+                    'WROTH': 'Archaic term for angry.',
+                    'XYLEM': 'Plant tissue transporting water.',
+                    'YAWNS': 'Opens mouth when tired.',
+                    'ZESTY': 'Full of flavor and excitement.',
+                    'ABYSS': 'Deep or seemingly bottomless chasm.',
+                    'BLITZ': 'Intense military attack.',
+                    'CYNIC': 'One who believes people are selfish.',
+                    'DEITY': 'God or goddess.',
+                    'ENVOY': 'Diplomatic messenger.',
+                    'FLANK': 'Side of body or military formation.',
+                    'GRIFT': 'Petty swindle or con.',
+                    'HEIST': 'Robbery or theft.',
+                    'INERT': 'Lacking motion or activity.',
+                    'JOUST': 'Medieval tournament combat.',
+                    'KNAVE': 'Dishonest person or jack in cards.',
+                    'LURID': 'Unpleasantly vivid or sensational.',
+                    'MYRIAD': 'Countless or very many.',
+                    'NEXUS': 'Connection or central link.',
+                    'OMEGA': 'Last letter of Greek alphabet.',
+                    'PLUMB': 'Measure depth or vertical.',
+                    'QUASH': 'Reject or suppress decisively.',
+                    'RELIC': 'Object surviving from earlier time.',
+                    'STOIC': 'Enduring hardship without complaint.',
+                    'TROVE': 'Store of valuable items.',
+                    'ULTRA': 'Extremely beyond normal.',
+                    'VIVID': 'Intensely bright or clear.',
+                    'WHELP': 'Young offspring of carnivore.',
+                    'XYLAN': 'Complex sugar in plant cell walls.',
+                    'YEAST': 'Fungus used in baking and brewing.',
+                    'ZILCH': 'Absolutely nothing.',
+                    'ANGST': 'Deep anxiety or dread.',
+                    'BRISK': 'Quick and energetic.',
+                    'CHASM': 'Deep fissure or gap.',
+                    'DECRY': 'Publicly denounce.',
+                    'ELEGY': 'Mournful poem for the dead.',
+                    'FLAUNT': 'Display ostentatiously.',
+                    'GNASH': 'Grind teeth in anger.',
+                    'HOARD': 'Secret store of valuables.',
+                    'INANE': 'Silly or lacking sense.',
+                    'JAZZY': 'Lively and stylish.',
+                    'KNURL': 'Small ridge or bead.',
+                    'LOCUS': 'Particular position or place.',
+                    'MOTIF': 'Recurring theme or pattern.',
+                    'NADIR': 'Lowest or worst point.',
+                    'OZONE': 'Gas layer protecting from UV.',
+                    'PIQUE': 'Stimulate interest or irritation.',
+                    'QUIRK': 'Peculiar trait or habit.',
+                    'RIGOR': 'Strictness or severity.',
+                    'SMIRK': 'Smug or conceited smile.',
+                    'TERSE': 'Brief and to the point.',
+                    'UNIFY': 'Make or become united.',
+                    'VEXED': 'Annoyed or troubled.',
+                    'WHIMS': 'Sudden desires or changes of mind.',
+                    'XEROX': 'Make photocopies.',
+                    'YOKEL': 'Unsophisticated country person.',
+                    'ZONAL': 'Arranged in zones.',
+                    'AXIOM': 'Self-evident truth.',
+                    'BLUFF': 'Attempt to deceive or steep cliff.',
+                    'CRYPT': 'Underground burial chamber.',
+                    'DROOP': 'Sag or hang down.',
+                    'EJECT': 'Force out suddenly.',
+                    'FEMUR': 'Thigh bone.',
+                    'GRUFF': 'Rough or stern manner.',
+                    'HYPER': 'Excessively energetic.',
+                    'INEPT': 'Lacking skill or competence.',
+                    'JUROR': 'Member of a jury.',
+                    'KIOSK': 'Small booth or stand.',
+                    'LUCID': 'Clear and easy to understand.',
+                    'MAXIM': 'Short expression of principle.',
+                    'NOMAD': 'Wandering person without home.',
+                    'OPINE': 'Express an opinion.',
+                    'PROXY': 'Authority to represent another.',
+                    'QUELL': 'Put down or suppress.',
+                    'RAWLY': 'In a crude or unrefined way.',
+                    'STAID': 'Sedate and respectable.',
+                    'TOXIC': 'Poisonous or harmful.',
+                    'UNDUE': 'Excessive or unwarranted.',
+                    'VAPID': 'Lacking interest or liveliness.'
+                }
+            }
+        };
+
+        let currentWord = '';
+        let currentDifficulty = 'medium';
+        let attempts = 0;
+        let maxAttempts = 6;
+        let gameActive = false;
+        let guessHistory = [];
+
+        const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+        const gameArea = document.getElementById('gameArea');
+        const guessInput = document.getElementById('guessInput');
+        const guessBtn = document.getElementById('guessBtn');
+        const newGameBtn = document.getElementById('newGameBtn');
+        const attemptsDisplay = document.getElementById('attempts');
+        const difficultyDisplay = document.getElementById('currentDifficulty');
+        const historyDiv = document.getElementById('history');
+        const messageDiv = document.getElementById('message');
+
+        difficultyBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                difficultyBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentDifficulty = btn.dataset.difficulty;
+                startGame();
+            });
+        });
+
+        guessBtn.addEventListener('click', submitGuess);
+        newGameBtn.addEventListener('click', startGame);
+        
+        guessInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitGuess();
+            }
+        });
+
+        guessInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+        });
+
+        function startGame() {
+            const wordList = wordLists[currentDifficulty].words;
+            currentWord = wordList[Math.floor(Math.random() * wordList.length)];
+            attempts = 0;
+            guessHistory = [];
+            gameActive = true;
+            
+            gameArea.classList.add('active');
+            guessInput.value = '';
+            guessInput.disabled = false;
+            guessBtn.disabled = false;
+            historyDiv.innerHTML = '';
+            messageDiv.className = 'message';
+            
+            attemptsDisplay.textContent = `${attempts}/${maxAttempts}`;
+            difficultyDisplay.textContent = currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1);
+            
+            guessInput.focus();
+        }
+
+        function submitGuess() {
+            if (!gameActive) return;
+            
+            const guess = guessInput.value.toUpperCase().trim();
+            
+            if (guess.length !== 5) {
+                showMessage('Please enter exactly 5 letters!', 'info');
+                return;
+            }
+            
+            if (guessHistory.some(g => g.word === guess)) {
+                showMessage('You already tried that word!', 'info');
+                return;
+            }
+            
+            attempts++;
+            attemptsDisplay.textContent = `${attempts}/${maxAttempts}`;
+            
+            const letterStates = getLetterStates(guess, currentWord);
+            const clue = getClue(guess);
+            
+            guessHistory.push({ word: guess, letterStates: letterStates, clue: clue });
+            addGuessToHistory(guess, letterStates, clue);
+            
+            if (guess === currentWord) {
+                winGame();
+            } else if (attempts >= maxAttempts) {
+                loseGame();
+            } else {
+                guessInput.value = '';
+                guessInput.focus();
+            }
+        }
+
+        function getLetterStates(guess, target) {
+            const states = [];
+            const targetLetters = target.split('');
+            const guessLetters = guess.split('');
+            
+            // First pass: mark correct positions
+            for (let i = 0; i < 5; i++) {
+                if (guessLetters[i] === targetLetters[i]) {
+                    states[i] = 'correct';
+                    targetLetters[i] = null;
+                } else {
+                    states[i] = null;
+                }
+            }
+            
+            // Second pass: mark present letters
+            for (let i = 0; i < 5; i++) {
+                if (states[i] === null) {
+                    const index = targetLetters.indexOf(guessLetters[i]);
+                    if (index !== -1) {
+                        states[i] = 'present';
+                        targetLetters[index] = null;
+                    } else {
+                        states[i] = 'absent';
+                    }
+                }
+            }
+            
+            return states;
+        }
+
+        function getClue(guess) {
+            const clues = wordLists[currentDifficulty].clues;
+            const targetClue = clues[currentWord];
+            
+            // Generate contextual clue
+            const genericClues = [
+                'Keep trying! The answer is a common word.',
+                'Not quite! Think about everyday things.',
+                'Good guess, but try a different direction.',
+                'Interesting! The word is more straightforward.',
+                'Close! Consider simpler possibilities.',
+                'Nice try! Think about basic concepts.',
+                'Almost there! The actual word is more common.',
+                'Try again! Consider different categories.'
+            ];
+            
+            return genericClues[attempts % genericClues.length];
+        }
+
+        function addGuessToHistory(word, letterStates, clue) {
+            const guessItem = document.createElement('div');
+            guessItem.className = 'guess-item';
+            
+            const letterRow = document.createElement('div');
+            letterRow.className = 'letter-row';
+            
+            for (let i = 0; i < 5; i++) {
+                const letterBox = document.createElement('div');
+                letterBox.className = `letter-box ${letterStates[i]}`;
+                letterBox.textContent = word[i];
+                letterRow.appendChild(letterBox);
+            }
+            
+            const clueDiv = document.createElement('div');
+            clueDiv.className = 'guess-clue';
+            clueDiv.innerHTML = `💡 ${clue}`;
+            
+            guessItem.appendChild(letterRow);
+            guessItem.appendChild(clueDiv);
+            historyDiv.insertBefore(guessItem, historyDiv.firstChild);
+        }
+
+        function winGame() {
+            gameActive = false;
+            guessInput.disabled = true;
+            guessBtn.disabled = true;
+            showMessage(`🎉 Correct! You got it in ${attempts} ${attempts === 1 ? 'try' : 'tries'}!`, 'win');
+        }
+
+        function loseGame() {
+            gameActive = false;
+            guessInput.disabled = true;
+            guessBtn.disabled = true;
+            showMessage(`Game Over! The word was: ${currentWord}`, 'lose');
+        }
+
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type} show`;
+        }
+
+        // Start with medium difficulty
+        startGame();
+    </script>
+</body>
+</html>
